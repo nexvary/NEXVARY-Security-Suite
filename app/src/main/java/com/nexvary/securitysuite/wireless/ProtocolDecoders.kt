@@ -13,10 +13,17 @@ object ProtocolDecoders {
         val protocolVersion: Int?,
         val uasId: String? = null,
         val status: String? = null,
+        val headingDegrees: Double? = null,
+        val horizontalSpeedMps: Double? = null,
+        val verticalSpeedMps: Double? = null,
         val latitude: Double? = null,
         val longitude: Double? = null,
         val altitudeBarometricM: Double? = null,
         val altitudeGeoM: Double? = null,
+        val heightM: Double? = null,
+        val selfId: String? = null,
+        val operatorLatitude: Double? = null,
+        val operatorLongitude: Double? = null,
         val operatorId: String? = null,
     )
 
@@ -34,7 +41,11 @@ object ProtocolDecoders {
             0x41 -> true
             else -> return null
         }
-        val eid = if (payload.size > 1) payload.copyOfRange(1, payload.size.coerceAtMost(21)).toHex() else null
+        val eid = if (payload.size > 1) {
+            payload.copyOfRange(1, payload.size.coerceAtMost(33)).toHex()
+        } else {
+            null
+        }
         return FindHubResult(separated, eid)
     }
 
@@ -58,17 +69,27 @@ object ProtocolDecoders {
 
         var uasId: String? = null
         var status: String? = null
+        var heading: Double? = null
+        var horizontalSpeed: Double? = null
+        var verticalSpeed: Double? = null
         var lat: Double? = null
         var lon: Double? = null
         var altBaro: Double? = null
         var altGeo: Double? = null
+        var height: Double? = null
+        var selfId: String? = null
+        var operatorLat: Double? = null
+        var operatorLon: Double? = null
         var operatorId: String? = null
 
         if (protocol in 0..2) {
             when (type) {
-                0 -> if (payload.size >= 24) uasId = ascii(payload, 4, 20)
+                0 -> if (payload.size >= 24) {
+                    uasId = ascii(payload, 4, 20)
+                }
                 1 -> if (payload.size >= 21) {
-                    val statusCode = (payload[3].toInt() ushr 4) and 0x0F
+                    val flags = payload[3].toInt() and 0xFF
+                    val statusCode = (flags ushr 4) and 0x0F
                     status = when (statusCode) {
                         0 -> "Undeclared"
                         1 -> "Ground"
@@ -77,16 +98,54 @@ object ProtocolDecoders {
                         4 -> "RID failure"
                         else -> "Status " + statusCode
                     }
+                    val headingRaw = payload[4].toInt() and 0xFF
+                    if (headingRaw != 0xFF) {
+                        heading = headingRaw.toDouble() + if (flags and 0x02 != 0) 180.0 else 0.0
+                    }
+                    val speedRaw = payload[5].toInt() and 0xFF
+                    if (speedRaw != 0xFF) {
+                        horizontalSpeed = if (flags and 0x01 != 0) {
+                            speedRaw * 0.75 + 63.75
+                        } else {
+                            speedRaw * 0.25
+                        }
+                    }
+                    verticalSpeed = payload[6].toByte().toInt() * 0.5
                     lat = i32le(payload, 7)?.times(1e-7)
                     lon = i32le(payload, 11)?.times(1e-7)
                     altBaro = u16le(payload, 15)?.times(0.5)?.minus(1000.0)
                     altGeo = u16le(payload, 17)?.times(0.5)?.minus(1000.0)
+                    height = u16le(payload, 19)?.times(0.5)?.minus(1000.0)
                 }
-                5 -> if (payload.size >= 24) operatorId = ascii(payload, 4, 20)
+                3 -> selfId = ascii(payload, 4, 23)
+                4 -> {
+                    operatorLat = i32le(payload, 4)?.times(1e-7)
+                    operatorLon = i32le(payload, 8)?.times(1e-7)
+                }
+                5 -> operatorId = ascii(payload, 4, 20)
             }
         }
 
-        return RemoteIdResult(appCode, counter, typeLabel, protocol, uasId, status, lat, lon, altBaro, altGeo, operatorId)
+        return RemoteIdResult(
+            appCode = appCode,
+            counter = counter,
+            messageType = typeLabel,
+            protocolVersion = protocol,
+            uasId = uasId,
+            status = status,
+            headingDegrees = heading,
+            horizontalSpeedMps = horizontalSpeed,
+            verticalSpeedMps = verticalSpeed,
+            latitude = lat,
+            longitude = lon,
+            altitudeBarometricM = altBaro,
+            altitudeGeoM = altGeo,
+            heightM = height,
+            selfId = selfId,
+            operatorLatitude = operatorLat,
+            operatorLongitude = operatorLon,
+            operatorId = operatorId,
+        )
     }
 
     private fun i32le(bytes: ByteArray, offset: Int): Int? {
@@ -96,15 +155,19 @@ object ProtocolDecoders {
 
     private fun u16le(bytes: ByteArray, offset: Int): Int? {
         if (offset + 2 > bytes.size) return null
-        return (bytes[offset].toInt() and 0xFF) or ((bytes[offset + 1].toInt() and 0xFF) shl 8)
+        return (bytes[offset].toInt() and 0xFF) or
+            ((bytes[offset + 1].toInt() and 0xFF) shl 8)
     }
 
     private fun ascii(bytes: ByteArray, offset: Int, length: Int): String? {
         if (offset >= bytes.size) return null
         val end = (offset + length).coerceAtMost(bytes.size)
-        return bytes.copyOfRange(offset, end).toString(Charsets.UTF_8)
-            .trim('\u0000', ' ', '\t', '\r', '\n').takeIf { it.isNotBlank() }
+        return bytes.copyOfRange(offset, end)
+            .toString(Charsets.UTF_8)
+            .trim('\u0000', ' ', '\t', '\r', '\n')
+            .takeIf { it.isNotBlank() }
     }
 
-    private fun ByteArray.toHex(): String = joinToString("") { "%02X".format(it.toInt() and 0xFF) }
+    private fun ByteArray.toHex(): String =
+        joinToString("") { "%02X".format(it.toInt() and 0xFF) }
 }

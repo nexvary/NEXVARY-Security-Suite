@@ -1,7 +1,28 @@
 package com.nexvary.securitysuite.wireless
 
 enum class RadioSource { BLE, WIFI }
-enum class DeviceCategory { TRACKER, DRONE, CAMERA, BODY_CAMERA, VEHICLE, NETWORK, OTHER }
+
+enum class DeviceCategory {
+    TRACKER,
+    DRONE,
+    CAMERA,
+    BODY_CAMERA,
+    VEHICLE,
+    NETWORK,
+    MESH,
+    SENSOR,
+    WEARABLE,
+    ACCESS_CONTROL,
+    OTHER,
+}
+
+enum class AlertSeverity(val weight: Int) {
+    INFO(0),
+    LOW(1),
+    MEDIUM(2),
+    HIGH(3),
+    CRITICAL(4),
+}
 
 data class RadioObservation(
     val stableId: String,
@@ -20,7 +41,16 @@ data class SignatureMatch(
     val category: DeviceCategory,
     val confidence: String,
     val reason: String,
+    val severity: AlertSeverity = AlertSeverity.INFO,
 )
 
-data class DisplayDevice(val observation: RadioObservation, val match: SignatureMatch?)
-data class CustomSignature(val label: String, val keyword: String, val source: RadioSource? = null)
+data class DisplayDevice(
+    val observation: RadioObservation,
+    val match: SignatureMatch?,
+)
+
+data class CustomSignature(
+    val label: String,
+    val keyword: String,
+    val source: RadioSource? = null,
+)

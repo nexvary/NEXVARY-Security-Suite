@@ -10,32 +10,44 @@ class SignatureEngine {
 
         if ("FCB2" in services) {
             val dult = observation.serviceData["FCB2"]?.let(ProtocolDecoders::decodeDult)
-            val mode = when (dult?.separated) {
-                true -> "separated"
-                false -> "near owner"
-                null -> "mode unknown"
-            }
-            return SignatureMatch("DULT tracker", DeviceCategory.TRACKER, "protocol", "FCB2 service; " + mode)
+            val separated = dult?.separated == true
+            return SignatureMatch(
+                label = "DULT tracker",
+                category = DeviceCategory.TRACKER,
+                confidence = "protocol",
+                reason = "FCB2 service; " + when (dult?.separated) {
+                    true -> "separated"
+                    false -> "near owner"
+                    null -> "mode unknown"
+                },
+                severity = if (separated) AlertSeverity.HIGH else AlertSeverity.MEDIUM,
+            )
         }
 
         observation.serviceData["FEAA"]?.let { data ->
             ProtocolDecoders.decodeFindHub(data)?.let { decoded ->
                 return SignatureMatch(
-                    "Google Find Hub",
-                    DeviceCategory.TRACKER,
-                    "protocol",
-                    if (decoded.separated) "FEAA separated frame" else "FEAA nearby frame",
+                    label = "Google Find Hub",
+                    category = DeviceCategory.TRACKER,
+                    confidence = "protocol",
+                    reason = if (decoded.separated) "FEAA separated frame" else "FEAA nearby frame",
+                    severity = if (decoded.separated) AlertSeverity.HIGH else AlertSeverity.MEDIUM,
                 )
             }
         }
 
         if ("FFFA" in services) {
             val rid = observation.serviceData["FFFA"]?.let(ProtocolDecoders::decodeRemoteId)
+            val emergency = rid?.status == "Emergency" || rid?.status == "RID failure"
             return SignatureMatch(
-                "Remote ID",
-                DeviceCategory.DRONE,
-                "protocol",
-                rid?.messageType?.let { "OpenDroneID " + it } ?: "OpenDroneID service UUID",
+                label = "Remote ID",
+                category = DeviceCategory.DRONE,
+                confidence = "protocol",
+                reason = rid?.let {
+                    "OpenDroneID " + (it.messageType ?: "frame") +
+                        (it.status?.let { s -> " · " + s } ?: "")
+                } ?: "OpenDroneID service UUID",
+                severity = if (emergency) AlertSeverity.CRITICAL else AlertSeverity.MEDIUM,
             )
         }
 
@@ -44,25 +56,39 @@ class SignatureEngine {
                 rule.keyword.isNotBlank() &&
                 upper.contains(rule.keyword.uppercase())
         }?.let {
-            return SignatureMatch(it.label, DeviceCategory.OTHER, "custom", "custom keyword: " + it.keyword)
+            return SignatureMatch(
+                label = it.label,
+                category = DeviceCategory.OTHER,
+                confidence = "custom",
+                reason = "custom keyword: " + it.keyword,
+                severity = AlertSeverity.MEDIUM,
+            )
         }
 
-        val rules = listOf(
-            Triple(DeviceCategory.TRACKER, "Item tracker", listOf("AIRTAG", "CHIPOLO", "PEBBLEBEE", "MOTO TAG", "SMARTTAG", "TILE")),
-            Triple(DeviceCategory.DRONE, "Drone / controller", listOf("DJI", "SKYDIO", "AUTEL", "PARROT", "HOVERAIR", "MAVIC")),
-            Triple(DeviceCategory.BODY_CAMERA, "Body camera", listOf("AXON", "BODYCAM", "BODY CAM", "BWC", "WATCHGUARD VIDEO")),
-            Triple(DeviceCategory.CAMERA, "Camera", listOf("GOPRO", "INSTA360", "OSMO", "REOLINK", "HIKVISION", "DAHUA", "WYZE", "EUFY", "ARLO", "RING")),
-            Triple(DeviceCategory.VEHICLE, "Vehicle network", listOf("TESLA", "MBUX", "UCONNECT", "CARPLAY", "AUDI MMI", "BMW", "RIVIAN")),
-        )
-        rules.forEach { (category, label, keywords) ->
-            val hit = keywords.firstOrNull { upper.contains(it) }
-            if (hit != null) {
-                return SignatureMatch(label, category, "heuristic", "name/SSID contains " + hit)
-            }
+        BuiltInSignatures.entries.firstOrNull { signature ->
+            (signature.source == null || signature.source == observation.source) &&
+                signature.keywords.any { keyword -> upper.contains(keyword.uppercase()) }
+        }?.let { signature ->
+            val keyword = signature.keywords.first { upper.contains(it.uppercase()) }
+            return SignatureMatch(
+                label = signature.label,
+                category = signature.category,
+                confidence = "heuristic",
+                reason = "name/SSID contains " + keyword,
+                severity = signature.severity,
+            )
         }
 
         return if (observation.source == RadioSource.WIFI) {
-            SignatureMatch("Wi-Fi network", DeviceCategory.NETWORK, "generic", "Android Wi-Fi scan result")
-        } else null
+            SignatureMatch(
+                label = "Wi-Fi network",
+                category = DeviceCategory.NETWORK,
+                confidence = "generic",
+                reason = "Android Wi-Fi scan result",
+                severity = AlertSeverity.INFO,
+            )
+        } else {
+            null
+        }
     }
 }
