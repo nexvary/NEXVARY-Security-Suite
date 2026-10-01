@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -33,11 +34,6 @@ import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarDefaults
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -107,15 +103,21 @@ fun SecuritySuiteApp(vm: WirelessViewModel) {
                 Scaffold(
                     containerColor = Color.Transparent,
                     bottomBar = {
-                        NavigationBar(
-                            containerColor = NexvaryPalette.Panel.copy(alpha = 0.96f),
-                            tonalElevation = 10.dp,
-                            windowInsets = NavigationBarDefaults.windowInsets,
+                        Surface(
+                            color = NexvaryPalette.Panel.copy(alpha = 0.98f),
+                            shadowElevation = 10.dp,
                         ) {
-                            BottomItem(tab == 0, { tab = 0 }, Icons.Default.Radar, if (arabic) "مباشر" else "Live")
-                            BottomItem(tab == 1, { tab = 1 }, Icons.Default.Wifi, if (arabic) "الجلسات" else "Sessions")
-                            BottomItem(tab == 2, { tab = 2 }, Icons.Default.Bluetooth, if (arabic) "المراقبة" else "Watch")
-                            BottomItem(tab == 3, { tab = 3 }, Icons.Default.Security, if (arabic) "حول" else "About")
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 6.dp, vertical = 7.dp),
+                                horizontalArrangement = Arrangement.spacedBy(5.dp),
+                            ) {
+                                BottomItem(tab == 0, { tab = 0 }, Icons.Default.Radar, if (arabic) "مباشر" else "Live")
+                                BottomItem(tab == 1, { tab = 1 }, Icons.Default.Wifi, if (arabic) "الجلسات" else "Sessions")
+                                BottomItem(tab == 2, { tab = 2 }, Icons.Default.Bluetooth, if (arabic) "المراقبة" else "Watch")
+                                BottomItem(tab == 3, { tab = 3 }, Icons.Default.Security, if (arabic) "حول" else "About")
+                            }
                         }
                     },
                 ) { padding ->
@@ -174,25 +176,44 @@ fun SecuritySuiteApp(vm: WirelessViewModel) {
 }
 
 @Composable
-private fun BottomItem(
+private fun RowScope.BottomItem(
     selected: Boolean,
     onClick: () -> Unit,
     icon: ImageVector,
     label: String,
 ) {
-    NavigationBarItem(
-        selected = selected,
+    val accent = if (selected) NexvaryPalette.ElectricBlue else NexvaryPalette.Gunmetal
+    Card(
         onClick = onClick,
-        icon = { Icon(icon, contentDescription = null) },
-        label = { Text(label) },
-        colors = NavigationBarItemDefaults.colors(
-            selectedIconColor = NexvaryPalette.Midnight,
-            selectedTextColor = NexvaryPalette.ElectricBlue,
-            indicatorColor = NexvaryPalette.ElectricBlue,
-            unselectedIconColor = NexvaryPalette.Silver,
-            unselectedTextColor = NexvaryPalette.Silver,
+        modifier = Modifier.weight(1f),
+        colors = CardDefaults.cardColors(
+            containerColor = if (selected) {
+                NexvaryPalette.ElectricBlue.copy(alpha = 0.16f)
+            } else {
+                NexvaryPalette.PanelRaised.copy(alpha = 0.7f)
+            },
         ),
-    )
+        border = BorderStroke(1.dp, accent),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 7.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Icon(
+                icon,
+                contentDescription = null,
+                tint = if (selected) NexvaryPalette.ElectricBlue else NexvaryPalette.Silver,
+            )
+            Text(
+                label,
+                color = if (selected) NexvaryPalette.ElectricBlue else NexvaryPalette.Silver,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+            )
+        }
+    }
 }
 
 @Composable
