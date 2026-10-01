@@ -7,11 +7,12 @@ android {
     namespace = "com.nexvary.securitysuite"
     compileSdk = 35
     defaultConfig {
-        applicationId = "com.nexvary.securitysuite"
+        // Unique install ID so this build can coexist with the previous Security Suite app.
+        applicationId = "com.nexvary.securitysuite.lab"
         minSdk = 29
         targetSdk = 35
-        versionCode = 2
-        versionName = "0.2.0"
+        versionCode = 3
+        versionName = "0.3.0"
     }
     buildTypes {
         release {

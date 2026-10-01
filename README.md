@@ -41,3 +41,11 @@ The first Wireless Watch work was inspired by and partially adapted from Fieldwa
 - `THIRD_PARTY_NOTICES.md`
 
 The repository does not copy Fieldwatch's packed `radiodb.bin` lookup database.
+
+## v0.3.0 identity / coexistence update
+
+- Unique install id: `com.nexvary.securitysuite.lab` so this build can coexist with the previous app.
+- Launcher identity: NEXVARY shield/N icon with electric-blue, metallic-silver, gold and neon accents.
+- Rich dark NEXVARY theme with electric blue, metallic silver, gold, neon green and amber status accents.
+- About page now exposes live official NEXVARY links for Website, Facebook, YouTube, X, email and GitHub.
+
