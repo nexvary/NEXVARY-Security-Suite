@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -59,7 +60,6 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import com.nexvary.securitysuite.BuildConfig
 import com.nexvary.securitysuite.wireless.AlertSeverity
 import com.nexvary.securitysuite.wireless.CustomSignature
 import com.nexvary.securitysuite.wireless.DeviceCategory
@@ -104,13 +104,14 @@ fun SecuritySuiteApp(vm: WirelessViewModel) {
                     containerColor = Color.Transparent,
                     bottomBar = {
                         Surface(
+                            modifier = Modifier.navigationBarsPadding(),
                             color = NexvaryPalette.Panel.copy(alpha = 0.98f),
-                            shadowElevation = 10.dp,
+                            shadowElevation = 8.dp,
                         ) {
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(horizontal = 6.dp, vertical = 7.dp),
+                                    .padding(horizontal = 6.dp, vertical = 4.dp),
                                 horizontalArrangement = Arrangement.spacedBy(5.dp),
                             ) {
                                 BottomItem(tab == 0, { tab = 0 }, Icons.Default.Radar, if (arabic) "مباشر" else "Live")
@@ -125,10 +126,10 @@ fun SecuritySuiteApp(vm: WirelessViewModel) {
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(padding)
-                            .padding(horizontal = 14.dp, vertical = 10.dp),
+                            .padding(horizontal = 12.dp, vertical = 6.dp),
                     ) {
                         Header(arabic = arabic, onLanguage = { arabic = !arabic })
-                        Spacer(Modifier.height(10.dp))
+                        Spacer(Modifier.height(4.dp))
                         Box(Modifier.weight(1f)) {
                             when (tab) {
                                 0 -> LiveScreen(
@@ -198,7 +199,7 @@ private fun RowScope.BottomItem(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 7.dp),
+                .padding(vertical = 5.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Icon(
@@ -233,18 +234,18 @@ private fun Header(arabic: Boolean, onLanguage: () -> Unit) {
                     Icon(
                         Icons.Default.Security,
                         contentDescription = null,
-                        modifier = Modifier.padding(10.dp),
+                        modifier = Modifier.padding(8.dp),
                     )
                 }
-                Column(Modifier.padding(horizontal = 10.dp)) {
+                Column(Modifier.padding(horizontal = 8.dp)) {
                     Text(
                         "NEXVARY",
-                        style = MaterialTheme.typography.headlineMedium,
+                        style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Black,
                         color = NexvaryPalette.Platinum,
                     )
                     Text(
-                        if (arabic) "Security Suite LAB · المراقبة اللاسلكية" else "Security Suite LAB · Wireless Watch",
+                        "Security Suite LAB",
                         color = NexvaryPalette.Silver,
                     )
                 }
@@ -312,7 +313,7 @@ private fun LiveScreen(
         Text(status, color = if (scanning) NexvaryPalette.NeonGreen else NexvaryPalette.Silver)
         Spacer(Modifier.height(6.dp))
         StatsCard(stats, arabic)
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(3.dp))
 
         OutlinedTextField(
             value = filter.query,
@@ -698,27 +699,8 @@ private fun AboutScreen(arabic: Boolean) {
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        item {
-            NexvaryCard(NexvaryPalette.Gold) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Security, contentDescription = null, tint = NexvaryPalette.Gold)
-                    Column(Modifier.padding(horizontal = 10.dp)) {
-                        Text("NEXVARY Security Suite LAB", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black)
-                        Text(
-                            "Version " + BuildConfig.VERSION_NAME,
-                            color = NexvaryPalette.NeonGreen,
-                        )
-                        Text(
-                            if (arabic) "إصدار مستقل يمكن تثبيته بجوار التطبيق السابق" else "Independent build that can coexist with the previous app",
-                            color = NexvaryPalette.Silver,
-                            style = MaterialTheme.typography.bodySmall,
-                        )
-                    }
-                }
-            }
-        }
         item {
             NexvaryCard(NexvaryPalette.ElectricBlue) {
                 Text(
@@ -733,6 +715,7 @@ private fun AboutScreen(arabic: Boolean) {
                         "NEXVARY local wireless-awareness platform for Wi-Fi and Bluetooth LE. It does not connect to discovered devices and exposes classification confidence and reasons to reduce false conclusions."
                     },
                     color = NexvaryPalette.Platinum,
+                    style = MaterialTheme.typography.bodyMedium,
                 )
             }
         }
@@ -742,6 +725,7 @@ private fun AboutScreen(arabic: Boolean) {
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = NexvaryPalette.Gold,
+                modifier = Modifier.padding(vertical = 2.dp),
             )
         }
         item {
@@ -774,17 +758,6 @@ private fun AboutScreen(arabic: Boolean) {
                 uri.openUri("https://github.com/nexvary")
             }
         }
-        item {
-            Text(
-                if (arabic) {
-                    "يتضمن المشروع أجزاءً مقتبسة أو معاد تصميمها من Fieldwatch وفق ترخيص MIT. نتائج التوقيع مؤشرات تقنية وليست إثباتًا لهوية الجهاز أو مالكه."
-                } else {
-                    "Includes portions adapted or redesigned from Fieldwatch under the MIT License. Signature matches are technical indicators, not proof of device identity or ownership."
-                },
-                color = NexvaryPalette.Silver,
-                style = MaterialTheme.typography.bodySmall,
-            )
-        }
     }
 }
 
@@ -805,11 +778,11 @@ private fun LinkButton(
         Row(
             Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
+                .padding(horizontal = 10.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(icon, contentDescription = null, tint = color)
-            Column(Modifier.padding(horizontal = 12.dp)) {
+            Column(Modifier.padding(horizontal = 9.dp)) {
                 Text(title, color = color, fontWeight = FontWeight.Bold)
                 Text(subtitle, color = NexvaryPalette.Silver, style = MaterialTheme.typography.bodySmall)
             }
@@ -831,8 +804,8 @@ private fun NexvaryCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 5.dp),
     ) {
         Column(
-            Modifier.padding(11.dp),
-            verticalArrangement = Arrangement.spacedBy(3.dp),
+            Modifier.padding(horizontal = 9.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
             content = content,
         )
     }
